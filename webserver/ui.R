@@ -16,7 +16,7 @@ shinyUI(fluidPage(
           box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
           margin: 30px;
         }"))),
-  navbarPage(title="findGSEP Webserver v1.3",id="tabs",position = 'fixed-top', inverse = T,
+  navbarPage(title="findGSEP Webserver v1.6",id="tabs",position = 'fixed-top', inverse = T,
              tabPanel('Home', icon = icon('home'),
 		      fluidRow(
                       column(width=4,
@@ -119,7 +119,27 @@ shinyUI(fluidPage(
 		      wellPanel(
                         textInput('species_name', label = 'Enter your species name: '),
                         textInput("outfile", label = "Output file name (no extension)", value = "result"),
-                        numericInput("n", "Enter ploidy number:", value = 2)
+                        # 倍性输入方式：二选一（互斥）。n 一律指 ploidy，无需再解释 base pattern。
+                        radioButtons("ploidy_mode", label = "Ploidy input:",
+                                     choices = c("Estimate ploidy n (generates a TXT inference report)" = "estimate",
+                                                 "Provide ploidy n" = "provide"),
+                                     selected = "estimate", inline = FALSE),
+                        # 仅“提供倍性”时显示：n + 倍性状态。左侧竖线表示从属于上面的选项。
+                        conditionalPanel(
+                          condition = "input.ploidy_mode == 'provide'",
+                          tags$div(style = "margin-left:18px; padding-left:14px; border-left:3px solid #d9d9d9;",
+                            numericInput("n", "Ploidy n", value = 2, min = 2, step = 1),
+                            radioButtons("ploidy_type", label = "Ploidy state:",
+                                         choices = c("Autoploidy" = "autopolyploid",
+                                                     "Alloploidy" = "allopolyploid"),
+                                         selected = "autopolyploid", inline = FALSE),
+                            helpText("n is the ploidy number (2 = diploid, 4 = tetraploid, ...)."),
+                            helpText("Autoploidy: the fitted curve uses n equal copies. ",
+                                     "Alloploidy: the subgenome number is additionally resolved from n.")
+                          )
+                        ),
+                        numericInput("mono_low", label = "Expected monoploid genome size lower bound (Mb, optional, estimate mode only):", value = NA),
+                        numericInput("mono_high", label = "Expected monoploid genome size upper bound (Mb, optional, estimate mode only):", value = NA)
                       ),
                       #passwordInput('passwd', label = 'Password:'),
                       #actionButton('login', label = 'Login'),
@@ -148,6 +168,9 @@ shinyUI(fluidPage(
                #downloadButton('ResultDown',label = 'Download Result'),
                #selectInput('seq_name','Choose Seq', c('', 'iris')),
                downloadButton('dVisualize', label = "Download image"),
+               br(),
+               br(),
+               downloadButton('dTxt', label = "Download report (TXT)", style = "white-space: normal; max-width: 100%;"),
                #p(id = 'double_click','Please click the Visualize button again if nothing pops up, if you are using Mac OS, you may need to allow pop-up window in the searching tab.',class='red')
 	       br(),
 	       br(),
